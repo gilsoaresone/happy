@@ -1,0 +1,187 @@
+<main class="tv-page">
+  <section class="tv-stage" aria-label="Foto em paisagem com efeito de tela de televisao">
+    <div class="tv-shell">
+      <div class="tv-screen">
+        <div class="screen-backdrop" aria-hidden="true"></div>
+        <img
+          src="images/img-niver2.png"
+          alt="Foto em destaque com acabamento de tela"
+          loading="eager"
+          decoding="async"
+        />
+        <div class="screen-reflection" aria-hidden="true"></div>
+        <div class="screen-glow" aria-hidden="true"></div>
+        <div class="screen-noise" aria-hidden="true"></div>
+        <div class="scanlines" aria-hidden="true"></div>
+        <div class="scan-sweep scan-sweep--one" aria-hidden="true"></div>
+        <div class="scan-sweep scan-sweep--two" aria-hidden="true"></div>
+        <div class="scan-sweep scan-sweep--three" aria-hidden="true"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="guestbook" aria-labelledby="guestbook-title">
+    <div class="guestbook__intro">
+      <p class="guestbook__eyebrow">Rede do parabens</p>
+      <h1 id="guestbook-title">Mural de recados para Kelly</h1>
+      <div class="guestbook__stats" aria-label="Resumo do mural de aniversario">
+        <article class="stat-card">
+          <strong>{{ postCount() }}</strong>
+          <span>recados no mural</span>
+        </article>
+        <article class="stat-card">
+          <strong>{{ emojiCount }}</strong>
+          <span>emojis liberados</span>
+        </article>
+        <article class="stat-card">
+          <strong>{{ stickerCount }}</strong>
+          <span>stickers para escolher</span>
+        </article>
+      </div>
+    </div>
+
+    <div class="guestbook__grid">
+      <form class="compose-card" (ngSubmit)="addPost()">
+        <div class="compose-card__header">
+          <div>
+            <p class="compose-card__eyebrow">Novo recado</p>
+            <h2>Publique no feed de aniversario</h2>
+          </div>
+          <div class="compose-card__preview">
+            <span class="compose-card__preview-emoji">{{ selectedEmoji }}</span>
+            <span
+              class="message-sticker"
+              [ngClass]="'message-sticker--' + activeSticker.tone"
+            >
+              <span>{{ activeSticker.emoji }}</span>
+              <span>{{ activeSticker.label }}</span>
+            </span>
+          </div>
+        </div>
+
+        <label class="form-field">
+          <span>Seu nome</span>
+          <input
+            type="text"
+            name="author"
+            [(ngModel)]="draftName"
+            placeholder="Ex.: Carol"
+            maxlength="32"
+          />
+        </label>
+
+        <label class="form-field">
+          <span>Seu recado</span>
+          <textarea
+            name="message"
+            [(ngModel)]="draftMessage"
+            placeholder="Escreva um parabens inesquecivel..."
+            maxlength="220"
+          ></textarea>
+        </label>
+
+        <div class="form-picker-group">
+          <div class="form-picker">
+            <span class="form-picker__label">Emoji</span>
+            <div class="emoji-picker">
+              <button
+                *ngFor="let emoji of emojiOptions"
+                type="button"
+                class="emoji-chip"
+                [class.is-active]="selectedEmoji === emoji"
+                (click)="selectedEmoji = emoji"
+                [attr.aria-pressed]="selectedEmoji === emoji"
+              >
+                {{ emoji }}
+              </button>
+            </div>
+          </div>
+
+          <div class="form-picker">
+            <span class="form-picker__label">Sticker</span>
+            <div class="sticker-picker">
+              <button
+                *ngFor="let sticker of stickerOptions"
+                type="button"
+                class="sticker-chip"
+                [class.is-active]="selectedStickerId === sticker.id"
+                [ngClass]="'sticker-chip--' + sticker.tone"
+                (click)="selectedStickerId = sticker.id"
+                [attr.aria-pressed]="selectedStickerId === sticker.id"
+              >
+                <span>{{ sticker.emoji }}</span>
+                <span>{{ sticker.label }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <button
+          class="publish-button"
+          type="submit"
+          [disabled]="isSubmitDisabled || isSubmitting()"
+        >
+          {{ isSubmitting() ? 'Publicando...' : 'Publicar recado' }}
+        </button>
+
+        <p class="compose-feedback compose-feedback--error" *ngIf="hasSubmitError">
+          {{ submitError() }}
+        </p>
+      </form>
+
+      <section class="feed-panel" aria-labelledby="feed-title">
+        <div class="feed-panel__header">
+          <div>
+            <p class="feed-panel__eyebrow">Timeline do dia</p>
+            <h2 id="feed-title">Ultimos recados</h2>
+          </div>
+          <span class="feed-panel__badge">Ao vivo no mural</span>
+        </div>
+
+        <article class="feed-status" *ngIf="isLoading()">
+          <span class="feed-status__emoji">⏳</span>
+          <h3>Carregando recados</h3>
+          <p>Buscando as mensagens salvas no servidor.</p>
+        </article>
+
+        <article class="feed-status feed-status--error" *ngIf="!isLoading() && hasLoadError">
+          <span class="feed-status__emoji">⚠️</span>
+          <h3>Falha ao carregar</h3>
+          <p>{{ loadError() }}</p>
+        </article>
+
+        <article class="feed-empty" *ngIf="!isLoading() && !hasLoadError && posts().length === 0">
+          <span class="feed-empty__emoji">💌</span>
+          <h3>Nenhum recado ainda</h3>
+          <p>O mural da Kelly esta pronto e esperando a primeira mensagem.</p>
+        </article>
+
+        <article
+          class="message-card"
+          *ngFor="let post of posts(); trackBy: trackByPostId"
+        >
+          <header class="message-card__header">
+            <div class="message-card__avatar">{{ post.initials }}</div>
+            <div class="message-card__meta">
+              <h3>{{ post.author }}</h3>
+              <p>{{ post.handle }} | {{ formatRelativeTime(post.createdAt) }}</p>
+            </div>
+            <span class="message-card__emoji" aria-hidden="true">{{ post.emoji }}</span>
+          </header>
+
+          <div class="message-sticker" [ngClass]="'message-sticker--' + post.sticker.tone">
+            <span>{{ post.sticker.emoji }}</span>
+            <span>{{ post.sticker.label }}</span>
+          </div>
+
+          <p class="message-card__text">{{ post.message }}</p>
+
+          <footer class="message-card__footer">
+            <span>💬 Recado enviado</span>
+            <span>🎈 Clima de festa</span>
+          </footer>
+        </article>
+      </section>
+    </div>
+  </section>
+</main>
