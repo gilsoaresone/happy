@@ -38,6 +38,8 @@ testem.log
 /typings
 __screenshots__/
 __start*.log
+/deploy
+/release.zip
 
 # System files
 .DS_Store

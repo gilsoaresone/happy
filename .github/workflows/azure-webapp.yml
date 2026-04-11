@@ -51,8 +51,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build
-    permissions:
-      contents: read
     environment:
       name: production
       url: ${{ steps.deploy.outputs.webapp-url }}
@@ -65,51 +63,8 @@ jobs:
 
       - name: Deploy to Azure Web App
         id: deploy
-        env:
-          DEPLOY_USER: ${{ secrets.AZURE_WEBAPP_PUBLISH_USERNAME }}
-          DEPLOY_PASSWORD: ${{ secrets.AZURE_WEBAPP_PUBLISH_PASSWORD }}
-        run: |
-          response_headers="$(mktemp)"
-
-          curl --fail-with-body --silent --show-error \
-            --dump-header "$response_headers" \
-            --user "$DEPLOY_USER:$DEPLOY_PASSWORD" \
-            --request POST \
-            --data-binary @release.zip \
-            "https://${AZURE_WEBAPP_NAME}.scm.azurewebsites.net/api/zipdeploy?isAsync=true"
-
-          deploy_url="$(awk '/^Location:/ {print $2}' "$response_headers" | tr -d '\r')"
-
-          if [ -z "$deploy_url" ]; then
-            echo "Deployment status URL was not returned by Kudu."
-            exit 1
-          fi
-
-          deployment_completed=false
-
-          for attempt in {1..60}; do
-            status_json="$(curl --fail-with-body --silent --show-error \
-              --user "$DEPLOY_USER:$DEPLOY_PASSWORD" \
-              "$deploy_url")"
-            status="$(echo "$status_json" | jq -r '.status')"
-
-            if [ "$status" = "4" ]; then
-              echo "Deployment completed."
-              deployment_completed=true
-              break
-            fi
-
-            if [ "$status" = "3" ]; then
-              echo "$status_json"
-              exit 1
-            fi
-
-            sleep 5
-          done
-
-          if [ "$deployment_completed" != "true" ]; then
-            echo "Deployment timed out while waiting for Kudu."
-            exit 1
-          fi
-
-          echo "webapp-url=https://${AZURE_WEBAPP_NAME}.azurewebsites.net" >> "$GITHUB_OUTPUT"
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: release.zip
