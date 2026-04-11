@@ -4,7 +4,8 @@ const fs = require('node:fs/promises');
 
 const HOST = process.env.HOST || '0.0.0.0';
 const PORT = Number(process.env.PORT || 3000);
-const DATA_FILE = path.join(__dirname, 'data', 'birthday-posts.json');
+const DATA_FILE =
+  process.env.BIRTHDAY_DATA_FILE || path.join(__dirname, 'data', 'birthday-posts.json');
 const DIST_DIR = path.join(__dirname, 'dist', 'feliz-aniversario', 'browser');
 
 const STICKER_OPTIONS = [
