@@ -7,7 +7,6 @@ const PORT = Number(process.env.PORT || 3000);
 const DATA_FILE =
   process.env.BIRTHDAY_DATA_FILE || path.join(__dirname, 'data', 'birthday-posts.json');
 const DIST_DIR = path.join(__dirname, 'dist', 'feliz-aniversario', 'browser');
-const ONE_OFF_RESET_PATH = '/api/internal/reset-posts-20260413-6f2c2ab7';
 
 const STICKER_OPTIONS = [
   { id: 'confetti-turbo', emoji: '\u{1F389}', label: 'Confete turbo', tone: 'party' },
@@ -167,15 +166,6 @@ async function handleApi(request, response, pathname) {
       'Access-Control-Allow-Origin': '*',
     });
     response.end();
-    return true;
-  }
-
-  if (pathname === ONE_OFF_RESET_PATH && request.method === 'POST') {
-    await writePosts([]);
-    sendJson(response, 200, {
-      message: 'guestbook reset',
-      dataFile: DATA_FILE,
-    });
     return true;
   }
 
