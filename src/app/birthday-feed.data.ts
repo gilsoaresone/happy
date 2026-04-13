@@ -43,13 +43,13 @@ export const STICKER_OPTIONS: StickerOption[] = [
   {
     id: 'brilho-maximo',
     emoji: '✨',
-    label: 'Brilho maximo',
+    label: 'Brilho máximo',
     tone: 'shine',
   },
   {
     id: 'abraco-pixelado',
     emoji: '🫶',
-    label: 'Abraco pixelado',
+    label: 'Abraço pixelado',
     tone: 'retro',
   },
 ];

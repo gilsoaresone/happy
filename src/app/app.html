@@ -1,5 +1,5 @@
 <main class="tv-page">
-  <section class="tv-stage" aria-label="Foto em paisagem com efeito de tela de televisao">
+  <section class="tv-stage" aria-label="Foto em paisagem com efeito de tela de televisão">
     <div class="tv-shell">
       <div class="tv-screen">
         <div class="screen-backdrop" aria-hidden="true"></div>
@@ -19,13 +19,11 @@
       </div>
     </div>
   </section>
-
-  
   <section class="guestbook" aria-labelledby="guestbook-title">
     <div class="guestbook__intro">
-      <p class="guestbook__eyebrow">Rede do parabens</p>
+      <p class="guestbook__eyebrow">Rede do parabéns</p>
       <h1 id="guestbook-title">Mural de recados para Kelly</h1>
-      <div class="guestbook__stats" aria-label="Resumo do mural de aniversario">
+      <div class="guestbook__stats" aria-label="Resumo do mural de aniversário">
         <article class="stat-card">
           <strong>{{ postCount() }}</strong>
           <span>recados no mural</span>
@@ -46,7 +44,7 @@
         <div class="compose-card__header">
           <div>
             <p class="compose-card__eyebrow">Novo recado</p>
-            <h2>Publique no feed de aniversario</h2>
+            <h2>Publique no feed de aniversário</h2>
           </div>
           <div class="compose-card__preview">
             <span class="compose-card__preview-emoji">{{ selectedEmoji }}</span>
@@ -76,7 +74,7 @@
           <textarea
             name="message"
             [(ngModel)]="draftMessage"
-            placeholder="Escreva um parabens inesquecivel..."
+            placeholder="Escreva um parabéns inesquecível..."
             maxlength="220"
           ></textarea>
         </label>
@@ -134,7 +132,7 @@
         <div class="feed-panel__header">
           <div>
             <p class="feed-panel__eyebrow">Timeline do dia</p>
-            <h2 id="feed-title">Ultimos recados</h2>
+            <h2 id="feed-title">Últimos recados</h2>
           </div>
           <span class="feed-panel__badge">Ao vivo no mural</span>
         </div>
@@ -154,7 +152,7 @@
         <article class="feed-empty" *ngIf="!isLoading() && !hasLoadError && posts().length === 0">
           <span class="feed-empty__emoji">💌</span>
           <h3>Nenhum recado ainda</h3>
-          <p>O mural da Kelly esta pronto e esperando a primeira mensagem.</p>
+          <p>O mural da Kelly está pronto e esperando a primeira mensagem.</p>
         </article>
 
         <article

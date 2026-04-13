@@ -17,7 +17,7 @@ describe('App', () => {
       label: 'Confete turbo',
       tone: 'party' as const,
     },
-    message: 'Parabens!',
+    message: 'Parabéns!',
   };
 
   const birthdayFeedApi = jasmine.createSpyObj<

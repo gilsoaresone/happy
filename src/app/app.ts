@@ -86,7 +86,7 @@ export class App {
             this.emojiOptions[(currentEmojiIndex + 1) % this.emojiOptions.length];
         },
         error: () => {
-          this.submitError.set('Servidor do mural indisponivel. Verifique se a API esta online.');
+          this.submitError.set('Servidor do mural indisponível. Verifique se a API está online.');
         },
       });
   }
@@ -113,17 +113,17 @@ export class App {
     }
 
     if (diffInMinutes < 60) {
-      return `ha ${diffInMinutes} min`;
+      return `há ${diffInMinutes} min`;
     }
 
     const diffInHours = Math.floor(diffInMinutes / 60);
 
     if (diffInHours < 24) {
-      return `ha ${diffInHours} h`;
+      return `há ${diffInHours} h`;
     }
 
     const diffInDays = Math.floor(diffInHours / 24);
-    return `ha ${diffInDays} d`;
+    return `há ${diffInDays} d`;
   }
 
   private loadPosts(): void {
@@ -142,7 +142,7 @@ export class App {
         },
         error: () => {
           this.posts.set([]);
-          this.loadError.set('Servidor do mural indisponivel. Verifique se a API esta online.');
+          this.loadError.set('Servidor do mural indisponível. Verifique se a API está online.');
         },
       });
   }

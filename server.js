@@ -11,8 +11,8 @@ const DIST_DIR = path.join(__dirname, 'dist', 'feliz-aniversario', 'browser');
 const STICKER_OPTIONS = [
   { id: 'confetti-turbo', emoji: '\u{1F389}', label: 'Confete turbo', tone: 'party' },
   { id: 'bolo-liberado', emoji: '\u{1F382}', label: 'Modo bolo', tone: 'sweet' },
-  { id: 'brilho-maximo', emoji: '\u2728', label: 'Brilho maximo', tone: 'shine' },
-  { id: 'abraco-pixelado', emoji: '\u{1FAF6}', label: 'Abraco pixelado', tone: 'retro' },
+  { id: 'brilho-maximo', emoji: '\u2728', label: 'Brilho máximo', tone: 'shine' },
+  { id: 'abraco-pixelado', emoji: '\u{1FAF6}', label: 'Abraço pixelado', tone: 'retro' },
 ];
 
 const CONTENT_TYPES = {
@@ -250,7 +250,7 @@ async function serveStatic(response, pathname) {
       sendText(
         response,
         404,
-        'Build nao encontrado. Rode "npm run build" para servir a aplicacao por este servidor.'
+        'Build não encontrado. Rode "npm run build" para servir a aplicação por este servidor.'
       );
     }
   }
