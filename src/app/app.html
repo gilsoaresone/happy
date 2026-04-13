@@ -72,10 +72,16 @@
         <label class="form-field">
           <span>Seu recado</span>
           <textarea
+            #messageField
             name="message"
             [(ngModel)]="draftMessage"
             placeholder="Escreva um parabéns inesquecível..."
-            maxlength="220"
+            [maxlength]="maxMessageLength"
+            (click)="rememberMessageSelection(messageField)"
+            (focus)="rememberMessageSelection(messageField)"
+            (input)="rememberMessageSelection(messageField)"
+            (keyup)="rememberMessageSelection(messageField)"
+            (select)="rememberMessageSelection(messageField)"
           ></textarea>
         </label>
 
@@ -88,7 +94,8 @@
                 type="button"
                 class="emoji-chip"
                 [class.is-active]="selectedEmoji === emoji"
-                (click)="selectedEmoji = emoji"
+                (mousedown)="preserveMessageSelection($event)"
+                (click)="insertEmoji(emoji, messageField)"
                 [attr.aria-pressed]="selectedEmoji === emoji"
               >
                 {{ emoji }}

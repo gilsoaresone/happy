@@ -29,11 +29,14 @@ export class App {
   readonly isSubmitting = signal(false);
   readonly loadError = signal('');
   readonly submitError = signal('');
+  readonly maxMessageLength = 220;
 
   draftName = '';
   draftMessage = '';
   selectedEmoji = this.emojiOptions[0];
   selectedStickerId = this.stickerOptions[0]?.id ?? '';
+  private messageSelectionStart = 0;
+  private messageSelectionEnd = 0;
 
   private readonly destroyRef = inject(DestroyRef);
   private readonly birthdayFeedApi = inject(BirthdayFeedApi);
@@ -48,6 +51,45 @@ export class App {
 
   get isSubmitDisabled(): boolean {
     return !this.draftName.trim() || !this.draftMessage.trim();
+  }
+
+  preserveMessageSelection(event: MouseEvent): void {
+    event.preventDefault();
+  }
+
+  rememberMessageSelection(textarea: HTMLTextAreaElement): void {
+    this.messageSelectionStart = textarea.selectionStart ?? this.draftMessage.length;
+    this.messageSelectionEnd = textarea.selectionEnd ?? this.messageSelectionStart;
+  }
+
+  insertEmoji(emoji: string, textarea: HTMLTextAreaElement): void {
+    let selectionStart = this.messageSelectionStart;
+    let selectionEnd = this.messageSelectionEnd;
+
+    if (document.activeElement === textarea) {
+      selectionStart = textarea.selectionStart ?? selectionStart;
+      selectionEnd = textarea.selectionEnd ?? selectionEnd;
+    } else if (selectionStart === 0 && selectionEnd === 0) {
+      selectionStart = this.draftMessage.length;
+      selectionEnd = this.draftMessage.length;
+    }
+
+    const nextMessageLength = this.draftMessage.length - (selectionEnd - selectionStart) + emoji.length;
+
+    if (nextMessageLength > this.maxMessageLength) {
+      return;
+    }
+
+    this.draftMessage = `${this.draftMessage.slice(0, selectionStart)}${emoji}${this.draftMessage.slice(selectionEnd)}`;
+    this.selectedEmoji = emoji;
+    this.messageSelectionStart = selectionStart + emoji.length;
+    this.messageSelectionEnd = this.messageSelectionStart;
+
+    queueMicrotask(() => {
+      textarea.focus();
+      textarea.setSelectionRange(this.messageSelectionStart, this.messageSelectionEnd);
+      this.rememberMessageSelection(textarea);
+    });
   }
 
   addPost(): void {
@@ -81,6 +123,8 @@ export class App {
           this.posts.update((posts) => [post, ...posts]);
           this.draftName = '';
           this.draftMessage = '';
+          this.messageSelectionStart = 0;
+          this.messageSelectionEnd = 0;
           this.selectedStickerId = this.stickerOptions[0]?.id ?? '';
           this.selectedEmoji =
             this.emojiOptions[(currentEmojiIndex + 1) % this.emojiOptions.length];

@@ -1,4 +1,4 @@
-import { TestBed } from '@angular/core/testing';
+import { TestBed, fakeAsync, flushMicrotasks } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { App } from './app';
 import { BirthdayFeedApi } from './birthday-feed.api';
@@ -58,4 +58,30 @@ describe('App', () => {
     expect(compiled.querySelectorAll('.message-card').length).toBe(0);
     expect(compiled.querySelector('.feed-empty')).toBeTruthy();
   });
+
+  it('should insert an emoji into the message at the cursor position', fakeAsync(() => {
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+
+    const app = fixture.componentInstance;
+    const textarea = document.createElement('textarea');
+    document.body.appendChild(textarea);
+
+    app.draftMessage = 'Feliz Kelly';
+    textarea.value = app.draftMessage;
+
+    textarea.focus();
+    textarea.setSelectionRange(6, 6);
+    app.rememberMessageSelection(textarea);
+    app.insertEmoji('🎉', textarea);
+
+    flushMicrotasks();
+    fixture.detectChanges();
+
+    expect(app.draftMessage).toBe('Feliz 🎉Kelly');
+    expect(textarea.selectionStart).toBe(8);
+    expect(textarea.selectionEnd).toBe(8);
+
+    textarea.remove();
+  }));
 });
