@@ -36,8 +36,10 @@ jobs:
       - name: Create deployment package
         run: |
           mkdir -p deploy/dist/feliz-aniversario
+          mkdir -p deploy/data
           cp package.json deploy/
           cp server.js deploy/
+          cp -R data/. deploy/data/
           cp -R dist/feliz-aniversario/browser deploy/dist/feliz-aniversario/
           cd deploy
           zip -r ../release.zip .
