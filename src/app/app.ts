@@ -29,7 +29,7 @@ export class App {
   readonly isSubmitting = signal(false);
   readonly loadError = signal('');
   readonly submitError = signal('');
-  readonly maxMessageLength = 220;
+  readonly maxMessageLength = 1000;
 
   draftName = '';
   draftMessage = '';
