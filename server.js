@@ -7,8 +7,6 @@ const PORT = Number(process.env.PORT || 3000);
 const DATA_FILE =
   process.env.BIRTHDAY_DATA_FILE || path.join(__dirname, 'data', 'birthday-posts.json');
 const DIST_DIR = path.join(__dirname, 'dist', 'feliz-aniversario', 'browser');
-const ONE_OFF_PRUNE_PATH = '/api/internal/prune-posts-20260418-7b91f4d2';
-const ONE_OFF_PRUNE_POST_IDS = new Set([1776542114621, 1776542006576, 1776538446050]);
 
 const STICKER_OPTIONS = [
   { id: 'confetti-turbo', emoji: '\u{1F389}', label: 'Confete turbo', tone: 'party' },
@@ -174,21 +172,6 @@ async function handleApi(request, response, pathname) {
   if (pathname === '/api/posts' && request.method === 'GET') {
     const posts = await readPosts();
     sendJson(response, 200, posts);
-    return true;
-  }
-
-  if (pathname === ONE_OFF_PRUNE_PATH && request.method === 'POST') {
-    const posts = await readPosts();
-    const nextPosts = posts.filter((post) => !ONE_OFF_PRUNE_POST_IDS.has(post.id));
-
-    await writePosts(nextPosts);
-    sendJson(response, 200, {
-      message: 'guestbook pruned',
-      before: posts.length,
-      after: nextPosts.length,
-      removed: posts.length - nextPosts.length,
-      dataFile: DATA_FILE,
-    });
     return true;
   }
 
