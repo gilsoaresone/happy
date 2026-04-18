@@ -116,10 +116,29 @@ jobs:
           import urllib.request
           import xml.etree.ElementTree as ET
 
-          remove_ids = [1776542114621, 1776542006576, 1776538446050]
+          app_url = 'https://happy-gilsoaresone-20260411.azurewebsites.net/api/posts'
+          remove_ids = {1776542114621, 1776542006576, 1776538446050}
 
-          with open('guestbook-snapshot.json', 'rb') as file:
-              snapshot_b64 = base64.b64encode(file.read()).decode('ascii')
+          with open('guestbook-snapshot.json', 'r', encoding='utf-8') as file:
+              snapshot_posts = json.load(file)
+
+          posts = snapshot_posts
+
+          try:
+              with urllib.request.urlopen(app_url, timeout=60) as response:
+                  current_posts = json.loads(response.read().decode('utf-8'))
+
+              if isinstance(current_posts, list) and len(current_posts) >= len(snapshot_posts):
+                  posts = current_posts
+          except Exception as error:
+              print(f'Using snapshot because current data could not be fetched: {error}')
+
+          next_posts = [
+              post
+              for post in posts
+              if int(post.get('id', -1)) not in remove_ids
+          ]
+          next_payload = json.dumps(next_posts, ensure_ascii=False, indent=2).encode('utf-8') + b'\n'
 
           root = ET.fromstring(os.environ['AZURE_WEBAPP_PUBLISH_PROFILE'])
           publish_profile = next(
@@ -133,44 +152,10 @@ jobs:
           password = publish_profile.get('userPWD')
           credentials = base64.b64encode(f'{username}:{password}'.encode('utf-8')).decode('ascii')
 
-          ids_json = json.dumps(remove_ids)
-          node_script = f"""
-          const fs = require('node:fs');
-          const path = require('node:path');
-
-          const target = process.env.BIRTHDAY_DATA_FILE || '/home/site/wwwroot/data/birthday-posts.json';
-          const removeIds = new Set({ids_json});
-          const fallbackPosts = JSON.parse(Buffer.from(process.env.GUESTBOOK_SNAPSHOT_B64, 'base64').toString('utf8'));
-          let posts = fallbackPosts;
-
-          try {{
-            if (fs.existsSync(target)) {{
-              const currentPosts = JSON.parse(fs.readFileSync(target, 'utf8'));
-
-              if (Array.isArray(currentPosts) && currentPosts.length >= fallbackPosts.length) {{
-                posts = currentPosts;
-              }}
-            }}
-          }} catch (error) {{
-            console.error('Using snapshot because current data could not be read: ' + error.message);
-          }}
-
-          const nextPosts = posts.filter((post) => !removeIds.has(Number(post.id)));
-          fs.mkdirSync(path.dirname(target), {{ recursive: true }});
-          fs.writeFileSync(target, JSON.stringify(nextPosts, null, 2) + '\n', 'utf8');
-          console.log(JSON.stringify({{
-            target,
-            before: posts.length,
-            after: nextPosts.length,
-            removed: posts.length - nextPosts.length,
-          }}));
-          """
-          command = "GUESTBOOK_SNAPSHOT_B64='" + snapshot_b64 + "' node <<'NODE'\n" + node_script + "\nNODE"
-
-          payload = json.dumps({'command': command, 'dir': '/home/site/wwwroot'}).encode('utf-8')
-          request = urllib.request.Request(
+          mkdir_payload = json.dumps({'command': 'mkdir -p data', 'dir': '/home/site/wwwroot'}).encode('utf-8')
+          mkdir_request = urllib.request.Request(
               f'https://{publish_url}/api/command',
-              data=payload,
+              data=mkdir_payload,
               headers={
                   'Authorization': f'Basic {credentials}',
                   'Content-Type': 'application/json',
@@ -178,8 +163,28 @@ jobs:
               method='POST',
           )
 
-          with urllib.request.urlopen(request, timeout=60) as response:
+          with urllib.request.urlopen(mkdir_request, timeout=60) as response:
               print(response.read().decode('utf-8'))
+
+          write_request = urllib.request.Request(
+              f'https://{publish_url}/api/vfs/site/wwwroot/data/birthday-posts.json',
+              data=next_payload,
+              headers={
+                  'Authorization': f'Basic {credentials}',
+                  'Content-Type': 'application/json; charset=utf-8',
+                  'If-Match': '*',
+              },
+              method='PUT',
+          )
+
+          with urllib.request.urlopen(write_request, timeout=60) as response:
+              print(f'Kudu VFS write status: {response.status}')
+
+          print(json.dumps({
+              'before': len(posts),
+              'after': len(next_posts),
+              'removed': len(posts) - len(next_posts),
+          }))
           PY
 
       - name: Verify guestbook pruning
