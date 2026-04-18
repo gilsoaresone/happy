@@ -68,3 +68,86 @@ jobs:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: release.zip
+
+      - name: Remove teste1 guestbook post on Azure
+        if: contains(github.event.head_commit.message, '[remove-teste1]')
+        env:
+          AZURE_WEBAPP_PUBLISH_PROFILE: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+        run: |
+          python3 - <<'PY'
+          import base64
+          import json
+          import os
+          import urllib.request
+          import xml.etree.ElementTree as ET
+
+          remove_ids = {1776544022898}
+          app_url = 'https://happy-gilsoaresone-20260411.azurewebsites.net/api/posts'
+
+          with urllib.request.urlopen(app_url, timeout=60) as response:
+              posts = json.loads(response.read().decode('utf-8'))
+
+          next_posts = [
+              post
+              for post in posts
+              if int(post.get('id', -1)) not in remove_ids
+          ]
+
+          if len(next_posts) == len(posts):
+              raise SystemExit('teste1 post was not found in production data')
+
+          root = ET.fromstring(os.environ['AZURE_WEBAPP_PUBLISH_PROFILE'])
+          publish_profile = next(
+              profile
+              for profile in root.findall('.//publishProfile')
+              if '.scm.azurewebsites.net' in (profile.get('publishUrl') or '')
+          )
+
+          publish_url = publish_profile.get('publishUrl').split(':')[0]
+          username = publish_profile.get('userName')
+          password = publish_profile.get('userPWD')
+          credentials = base64.b64encode(f'{username}:{password}'.encode('utf-8')).decode('ascii')
+          payload = json.dumps(next_posts, ensure_ascii=False, indent=2).encode('utf-8') + b'\n'
+
+          request = urllib.request.Request(
+              f'https://{publish_url}/api/vfs/data/birthday-posts.json',
+              data=payload,
+              headers={
+                  'Authorization': f'Basic {credentials}',
+                  'Content-Type': 'application/json; charset=utf-8',
+                  'If-Match': '*',
+              },
+              method='PUT',
+          )
+
+          with urllib.request.urlopen(request, timeout=60) as response:
+              print(f'Kudu VFS write status: {response.status}')
+
+          print(json.dumps({
+              'before': len(posts),
+              'after': len(next_posts),
+              'removed': len(posts) - len(next_posts),
+          }))
+          PY
+
+      - name: Verify teste1 removal
+        if: contains(github.event.head_commit.message, '[remove-teste1]')
+        run: |
+          python3 - <<'PY'
+          import json
+          import urllib.request
+
+          remove_ids = {1776544022898}
+          url = 'https://happy-gilsoaresone-20260411.azurewebsites.net/api/posts'
+
+          with urllib.request.urlopen(url, timeout=60) as response:
+              posts = json.loads(response.read().decode('utf-8'))
+
+          remaining_ids = {int(post['id']) for post in posts}
+          found_removed = sorted(remove_ids & remaining_ids)
+
+          if found_removed:
+              raise SystemExit(f'teste1 ID still present: {found_removed}')
+
+          print(f'Verified posts after removing teste1: {len(posts)}')
+          PY
