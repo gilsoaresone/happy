@@ -152,12 +152,12 @@ jobs:
               }}
             }}
           }} catch (error) {{
-            console.error(`Using snapshot because current data could not be read: ${{error.message}}`);
+            console.error('Using snapshot because current data could not be read: ' + error.message);
           }}
 
           const nextPosts = posts.filter((post) => !removeIds.has(Number(post.id)));
           fs.mkdirSync(path.dirname(target), {{ recursive: true }});
-          fs.writeFileSync(target, `${{JSON.stringify(nextPosts, null, 2)}}\n`, 'utf8');
+          fs.writeFileSync(target, JSON.stringify(nextPosts, null, 2) + '\n', 'utf8');
           console.log(JSON.stringify({{
             target,
             before: posts.length,
