@@ -33,35 +33,6 @@ jobs:
       - name: Build app
         run: npm run build
 
-      - name: Snapshot production guestbook
-        if: contains(github.event.head_commit.message, '[prune-guestbook-posts]')
-        run: |
-          python3 - <<'PY'
-          import json
-          import urllib.request
-
-          url = 'https://happy-gilsoaresone-20260411.azurewebsites.net/api/posts'
-
-          with urllib.request.urlopen(url, timeout=60) as response:
-              posts = json.loads(response.read().decode('utf-8'))
-
-          if not isinstance(posts, list):
-              raise SystemExit('Production guestbook response was not a list')
-
-          with open('guestbook-snapshot.json', 'w', encoding='utf-8') as file:
-              json.dump(posts, file, ensure_ascii=False, indent=2)
-              file.write('\n')
-
-          print(f'Snapshot posts: {len(posts)}')
-          PY
-
-      - name: Upload guestbook snapshot
-        if: contains(github.event.head_commit.message, '[prune-guestbook-posts]')
-        uses: actions/upload-artifact@v4
-        with:
-          name: guestbook-snapshot
-          path: guestbook-snapshot.json
-
       - name: Create deployment package
         run: |
           mkdir -p deploy/dist/feliz-aniversario
@@ -98,93 +69,24 @@ jobs:
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: release.zip
 
-      - name: Download guestbook snapshot
-        if: contains(github.event.head_commit.message, '[prune-guestbook-posts]')
-        uses: actions/download-artifact@v4
-        with:
-          name: guestbook-snapshot
-
       - name: Remove selected guestbook posts on Azure
         if: contains(github.event.head_commit.message, '[prune-guestbook-posts]')
-        env:
-          AZURE_WEBAPP_PUBLISH_PROFILE: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
         run: |
           python3 - <<'PY'
-          import base64
           import json
-          import os
           import urllib.request
-          import xml.etree.ElementTree as ET
 
-          app_url = 'https://happy-gilsoaresone-20260411.azurewebsites.net/api/posts'
-          remove_ids = {1776542114621, 1776542006576, 1776538446050}
-
-          with open('guestbook-snapshot.json', 'r', encoding='utf-8') as file:
-              snapshot_posts = json.load(file)
-
-          posts = snapshot_posts
-
-          try:
-              with urllib.request.urlopen(app_url, timeout=60) as response:
-                  current_posts = json.loads(response.read().decode('utf-8'))
-
-              if isinstance(current_posts, list) and len(current_posts) >= len(snapshot_posts):
-                  posts = current_posts
-          except Exception as error:
-              print(f'Using snapshot because current data could not be fetched: {error}')
-
-          next_posts = [
-              post
-              for post in posts
-              if int(post.get('id', -1)) not in remove_ids
-          ]
-          next_payload = json.dumps(next_posts, ensure_ascii=False, indent=2).encode('utf-8') + b'\n'
-
-          root = ET.fromstring(os.environ['AZURE_WEBAPP_PUBLISH_PROFILE'])
-          publish_profile = next(
-              profile
-              for profile in root.findall('.//publishProfile')
-              if '.scm.azurewebsites.net' in (profile.get('publishUrl') or '')
-          )
-
-          publish_url = publish_profile.get('publishUrl').split(':')[0]
-          username = publish_profile.get('userName')
-          password = publish_profile.get('userPWD')
-          credentials = base64.b64encode(f'{username}:{password}'.encode('utf-8')).decode('ascii')
-
-          mkdir_payload = json.dumps({'command': 'mkdir -p data', 'dir': '/home/site/wwwroot'}).encode('utf-8')
-          mkdir_request = urllib.request.Request(
-              f'https://{publish_url}/api/command',
-              data=mkdir_payload,
-              headers={
-                  'Authorization': f'Basic {credentials}',
-                  'Content-Type': 'application/json',
-              },
+          request = urllib.request.Request(
+              'https://happy-gilsoaresone-20260411.azurewebsites.net/api/internal/prune-posts-20260418-7b91f4d2',
+              data=b'{}',
+              headers={'Content-Type': 'application/json'},
               method='POST',
           )
 
-          with urllib.request.urlopen(mkdir_request, timeout=60) as response:
-              print(response.read().decode('utf-8'))
+          with urllib.request.urlopen(request, timeout=60) as response:
+              result = json.loads(response.read().decode('utf-8'))
 
-          write_request = urllib.request.Request(
-              f'https://{publish_url}/api/vfs/site/wwwroot/data/birthday-posts.json',
-              data=next_payload,
-              headers={
-                  'Authorization': f'Basic {credentials}',
-                  'Content-Type': 'application/json; charset=utf-8',
-                  'If-Match': '*',
-              },
-              method='PUT',
-          )
-
-          with urllib.request.urlopen(write_request, timeout=60) as response:
-              print(f'Kudu VFS write status: {response.status}')
-
-          print(json.dumps({
-              'before': len(posts),
-              'after': len(next_posts),
-              'removed': len(posts) - len(next_posts),
-          }))
+          print(json.dumps(result))
           PY
 
       - name: Verify guestbook pruning
