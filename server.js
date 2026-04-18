@@ -187,7 +187,7 @@ async function handleApi(request, response, pathname) {
     }
 
     const author = sanitizeText(body.author, 32);
-    const message = sanitizeText(body.message, 220);
+    const message = sanitizeText(body.message, 1000);
     const emoji = sanitizeText(body.emoji, 16);
     const stickerId = sanitizeText(body.stickerId, 64);
 
